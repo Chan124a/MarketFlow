@@ -56,22 +56,24 @@ async function fetchIndices() {
 exports.fetchIndices = fetchIndices;
 async function fetchIndexDetails(code) {
     const name = exports.INDEX_CODES[code] ?? code;
-    const [dailyResult, intradayResult] = await Promise.allSettled([
+    const [dailyResult, intradayResult, multiDayResult] = await Promise.allSettled([
         fetchDailySeries(code),
-        fetchIntradayTrend(code),
+        fetchIntradaySeries(code),
+        fetchMultiDayIntradaySeries(code),
     ]);
     const dailySeries = dailyResult.status === 'fulfilled' ? dailyResult.value : [];
     const intradaySeries = intradayResult.status === 'fulfilled' ? intradayResult.value : [];
+    const multiDaySeries = multiDayResult.status === 'fulfilled' ? multiDayResult.value : [];
+    const recentThreeDays = multiDaySeries.slice(-3).flatMap((item) => item.data);
     return {
         code,
         name,
         kline: {
-            '1d': sliceTail(dailySeries, KLINE_WINDOWS['1d']),
-            '3d': sliceTail(dailySeries, KLINE_WINDOWS['3d']),
+            '1d': toIntradayCandles(intradaySeries, 5),
+            '3d': recentThreeDays.length > 0 ? toIntradayCandles(recentThreeDays, 30) : sliceTail(dailySeries, KLINE_WINDOWS['3d']),
             '7d': sliceTail(dailySeries, KLINE_WINDOWS['7d']),
         },
         trend: {
-            '1d': intradaySeries,
             '1m': toTrendPoints(sliceTail(dailySeries, TREND_WINDOWS['1m'])),
             '3m': toTrendPoints(sliceTail(dailySeries, TREND_WINDOWS['3m'])),
             '6m': toTrendPoints(sliceTail(dailySeries, TREND_WINDOWS['6m'])),
@@ -94,7 +96,7 @@ async function fetchDailySeries(code) {
         .map((item) => parseCandleRow(item))
         .filter((item) => item !== null);
 }
-async function fetchIntradayTrend(code) {
+async function fetchIntradaySeries(code) {
     const response = await axios_1.default.get(`https://web.ifzq.gtimg.cn/appstock/app/minute/query?code=${code}`, { timeout: 5000 });
     const quote = response.data?.data?.[code];
     const container = quote?.data?.data ? quote.data : quote?.data;
@@ -104,8 +106,16 @@ async function fetchIntradayTrend(code) {
         return [];
     }
     return rawSeries
-        .map((item) => parseTrendRow(item, date))
+        .map((item) => parseIntradayRow(item, date))
         .filter((item) => item !== null);
+}
+async function fetchMultiDayIntradaySeries(code) {
+    const path = getTencentFlashPath(code);
+    if (!path) {
+        return [];
+    }
+    const response = await axios_1.default.get(`http://data.gtimg.cn/flashdata/hushen/4day/${path}.js?visitDstTime=1`, { timeout: 5000 });
+    return parseFourDaySeries(String(response.data));
 }
 function parseCandleRow(item) {
     if (!Array.isArray(item) || item.length < 5) {
@@ -121,7 +131,7 @@ function parseCandleRow(item) {
         volume: toNumber(volume),
     };
 }
-function parseTrendRow(item, date) {
+function parseIntradayRow(item, date) {
     if (typeof item !== 'string') {
         return null;
     }
@@ -129,11 +139,48 @@ function parseTrendRow(item, date) {
     if (segments.length < 2) {
         return null;
     }
-    const [time, value] = segments;
+    const [time, value, volume] = segments;
     const normalizedDate = normalizeCompactDate(date);
     return {
         time: normalizedDate ? `${normalizedDate} ${time}` : time,
         value: toNumber(value),
+        volume: toNumber(volume),
+    };
+}
+function parseFourDaySeries(source) {
+    const raw = source.match(/var\s+min_data_4d=\[(.*)\];?$/s)?.[1];
+    if (!raw) {
+        return [];
+    }
+    const normalized = raw.replace(/'/g, '"');
+    const parsed = JSON.parse(`[${normalized}]`);
+    return parsed
+        .map((item) => {
+        const date = normalizeCompactDate(item.date);
+        const data = typeof item.data === 'string' ? item.data.split('^') : [];
+        if (!date || data.length === 0) {
+            return null;
+        }
+        return {
+            date,
+            data: data
+                .map((line) => parseFourDayRow(line, date))
+                .filter((point) => point !== null),
+        };
+    })
+        .filter((item) => item !== null);
+}
+function parseFourDayRow(line, date) {
+    const segments = line.split('~');
+    if (segments.length < 3) {
+        return null;
+    }
+    const [time, value, volume] = segments;
+    const normalizedTime = time.length === 4 ? `${time.slice(0, 2)}:${time.slice(2, 4)}` : time;
+    return {
+        time: `${date} ${normalizedTime}`,
+        value: toNumber(value),
+        volume: toNumber(volume),
     };
 }
 function normalizeCompactDate(value) {
@@ -150,6 +197,61 @@ function toTrendPoints(series) {
         time: item.time,
         value: item.close,
     }));
+}
+function toIntradayCandles(series, intervalMinutes) {
+    if (series.length === 0) {
+        return [];
+    }
+    const buckets = new Map();
+    for (let index = 0; index < series.length; index += 1) {
+        const item = series[index];
+        const previousClose = index === 0 ? item.value : series[index - 1].value;
+        const incrementalVolume = index === 0 ? item.volume : Math.max(item.volume - series[index - 1].volume, 0);
+        const bucketKey = buildMinuteBucket(item.time, intervalMinutes);
+        const existing = buckets.get(bucketKey);
+        if (!existing) {
+            buckets.set(bucketKey, {
+                time: bucketKey,
+                open: previousClose,
+                close: item.value,
+                high: Math.max(previousClose, item.value),
+                low: Math.min(previousClose, item.value),
+                volume: incrementalVolume,
+            });
+            continue;
+        }
+        existing.close = item.value;
+        existing.high = Math.max(existing.high, item.value);
+        existing.low = Math.min(existing.low, item.value);
+        existing.volume += incrementalVolume;
+    }
+    return Array.from(buckets.values());
+}
+function buildMinuteBucket(value, intervalMinutes) {
+    const [datePart, timePart] = value.split(' ');
+    if (!timePart) {
+        return value;
+    }
+    const [hourText, minuteText] = timePart.split(':');
+    const hour = Number(hourText);
+    const minute = Number(minuteText);
+    if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+        return value;
+    }
+    const totalMinutes = hour * 60 + minute;
+    const bucketStart = Math.floor(totalMinutes / intervalMinutes) * intervalMinutes;
+    const bucketHour = String(Math.floor(bucketStart / 60)).padStart(2, '0');
+    const bucketMinute = String(bucketStart % 60).padStart(2, '0');
+    return `${datePart} ${bucketHour}:${bucketMinute}`;
+}
+function getTencentFlashPath(code) {
+    if (code.startsWith('sh')) {
+        return `sh/${code}`;
+    }
+    if (code.startsWith('sz')) {
+        return `sz/${code}`;
+    }
+    return null;
 }
 function sliceTail(items, size) {
     return items.slice(Math.max(items.length - size, 0));

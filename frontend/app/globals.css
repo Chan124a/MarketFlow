@@ -286,8 +286,20 @@ body {
 }
 
 .segmented-control-wrap {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.trend-control {
+  margin-left: auto;
   justify-content: flex-end;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 4px;
 }
 
 .segmented-control button {
@@ -320,18 +332,56 @@ body {
   fill: #0a1224;
 }
 
-.candle-wick {
+.chart-grid-line {
+  stroke: rgba(148, 163, 184, 0.15);
+  stroke-dasharray: 4 6;
+}
+
+.chart-axis-line {
+  stroke: rgba(148, 163, 184, 0.3);
+  stroke-width: 1;
+}
+
+.chart-axis-label {
+  fill: #8ea5c6;
+  font-size: 12px;
+}
+
+.chart-hit-area {
+  fill: transparent;
+}
+
+.chart-hit-area-circle {
+  fill: transparent;
+}
+
+.chart-crosshair {
+  stroke: rgba(125, 211, 252, 0.45);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.trend-active-dot {
+  fill: #7dd3fc;
+  stroke: #0a1224;
   stroke-width: 2;
 }
 
-.candle-body {
-  stroke-width: 0;
+.candle-wick {
+  stroke-width: 1.5;
 }
 
-.candle-up .candle-wick,
+.candle-body {
+  stroke-width: 1.5;
+}
+
+.candle-up .candle-wick {
+  stroke: #f87171;
+}
+
 .candle-up .candle-body {
   stroke: #f87171;
-  fill: #f87171;
+  fill: transparent;
 }
 
 .candle-down .candle-wick,
@@ -355,6 +405,24 @@ body {
   gap: 12px;
   color: #8ea5c6;
   font-size: 13px;
+}
+
+.chart-tooltip {
+  justify-self: start;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(10, 18, 36, 0.92);
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  color: #d7e6fa;
+  font-size: 12px;
+}
+
+.chart-tooltip-floating {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
 }
 
 .chart-empty {
@@ -400,6 +468,11 @@ body {
   }
 
   .segmented-control-wrap {
+    justify-content: flex-start;
+  }
+
+  .trend-control {
+    margin-left: 0;
     justify-content: flex-start;
   }
 }

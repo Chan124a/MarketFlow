@@ -32,8 +32,8 @@ interface TrendPoint {
 interface IndexDetails {
   code: string;
   name: string;
-  kline: Record<'1d' | '3d' | '7d', CandlePoint[]>;
-  trend: Record<'1d' | '1m' | '3m' | '6m' | '9m' | '1y' | '2y' | '3y', TrendPoint[]>;
+  marketChart: Record<string, TrendPoint[] | CandlePoint[]>;
+  trend: Record<string, TrendPoint[]>;
 }
 
 const CATEGORIES: Record<string, string[]> = {
@@ -50,8 +50,8 @@ export default function Dashboard() {
   const [details, setDetails] = useState<IndexDetails | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
-  const [klineRange, setKlineRange] = useState<'1d' | '3d' | '7d'>('1d');
-  const [trendRange, setTrendRange] = useState<'1d' | '1m' | '3m' | '6m' | '9m' | '1y' | '2y' | '3y'>('1d');
+  const [klineRange, setKlineRange] = useState<string>('day');
+  const [trendRange, setTrendRange] = useState<string>('1m');
 
   useEffect(() => {
     fetch('http://localhost:3001/api/indices')
@@ -131,7 +131,7 @@ export default function Dashboard() {
     setDetails(null);
     setDetailsError(null);
     setKlineRange('1d');
-    setTrendRange('1d');
+    setTrendRange('1m');
   };
 
   const closeDetails = () => {

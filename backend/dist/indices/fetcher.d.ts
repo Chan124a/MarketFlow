@@ -35,7 +35,7 @@ export interface IndexDetails {
     code: string;
     name: string;
     kline: Record<'1d' | '3d' | '7d', CandlePoint[]>;
-    trend: Record<'1d' | '1m' | '3m' | '6m' | '9m' | '1y' | '2y' | '3y', TrendPoint[]>;
+    trend: Record<'1m' | '3m' | '6m' | '9m' | '1y' | '2y' | '3y', TrendPoint[]>;
 }
 export declare function fetchIndices(): Promise<IndexData[]>;
 export declare function fetchIndexDetails(code: string): Promise<IndexDetails>;
