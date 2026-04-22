@@ -18,29 +18,47 @@ let IndicesService = IndicesService_1 = class IndicesService {
     constructor(events) {
         this.events = events;
         this.logger = new common_1.Logger(IndicesService_1.name);
+        this.latestIndices = [];
     }
     async onModuleInit() {
-        const data = await (0, fetcher_1.fetchIndices)();
-        this.events.emit(data);
+        await this.refreshIndices();
         this.interval = setInterval(async () => {
-            try {
-                const data = await (0, fetcher_1.fetchIndices)();
-                this.events.emit(data);
-            }
-            catch (error) {
-                this.logger.error('Failed to fetch indices', error);
-            }
+            await this.refreshIndices();
         }, 30000);
     }
     onModuleDestroy() {
-        clearInterval(this.interval);
+        if (this.interval) {
+            clearInterval(this.interval);
+        }
     }
     async getIndices() {
-        return (0, fetcher_1.fetchIndices)();
+        const data = await this.tryFetchIndices();
+        return data ?? this.latestIndices;
     }
     async getIndex(code) {
-        const all = await (0, fetcher_1.fetchIndices)();
+        const all = await this.getIndices();
         return all.find((item) => item.code === code);
+    }
+    async getIndexDetails(code) {
+        return (0, fetcher_1.fetchIndexDetails)(code);
+    }
+    async refreshIndices() {
+        const data = await this.tryFetchIndices();
+        if (!data) {
+            return;
+        }
+        this.latestIndices = data;
+        this.events.emit(data);
+    }
+    async tryFetchIndices() {
+        try {
+            return await (0, fetcher_1.fetchIndices)();
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.warn(`Failed to fetch indices: ${message}`);
+            return null;
+        }
     }
 };
 exports.IndicesService = IndicesService;

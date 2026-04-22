@@ -8,6 +8,12 @@ export class IndicesController {
   @Get()
   async findAll() {
     const data = await this.service.getIndices();
+    return { success: true, data, stale: data.length === 0 };
+  }
+
+  @Get(':code/details')
+  async findDetails(@Param('code') code: string) {
+    const data = await this.service.getIndexDetails(code);
     return { success: true, data };
   }
 

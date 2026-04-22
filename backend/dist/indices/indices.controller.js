@@ -21,6 +21,10 @@ let IndicesController = class IndicesController {
     }
     async findAll() {
         const data = await this.service.getIndices();
+        return { success: true, data, stale: data.length === 0 };
+    }
+    async findDetails(code) {
+        const data = await this.service.getIndexDetails(code);
         return { success: true, data };
     }
     async findOne(code) {
@@ -38,6 +42,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], IndicesController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':code/details'),
+    __param(0, (0, common_1.Param)('code')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], IndicesController.prototype, "findDetails", null);
 __decorate([
     (0, common_1.Get)(':code'),
     __param(0, (0, common_1.Param)('code')),

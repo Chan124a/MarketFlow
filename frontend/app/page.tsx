@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import IndexCard from '@/components/IndexCard';
+import IndexDetailModal from '@/components/IndexDetailModal';
 
 interface IndexData {
   code: string;
@@ -12,6 +13,27 @@ interface IndexData {
   changePercent: number;
   volume: number;
   timestamp: string;
+}
+
+interface CandlePoint {
+  time: string;
+  open: number;
+  close: number;
+  high: number;
+  low: number;
+  volume: number;
+}
+
+interface TrendPoint {
+  time: string;
+  value: number;
+}
+
+interface IndexDetails {
+  code: string;
+  name: string;
+  kline: Record<'1d' | '3d' | '7d', CandlePoint[]>;
+  trend: Record<'1d' | '1m' | '3m' | '6m' | '9m' | '1y' | '2y' | '3y', TrendPoint[]>;
 }
 
 const CATEGORIES: Record<string, string[]> = {
@@ -24,6 +46,12 @@ export default function Dashboard() {
   const [indices, setIndices] = useState<IndexData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<IndexData | null>(null);
+  const [details, setDetails] = useState<IndexDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+  const [klineRange, setKlineRange] = useState<'1d' | '3d' | '7d'>('1d');
+  const [trendRange, setTrendRange] = useState<'1d' | '1m' | '3m' | '6m' | '9m' | '1y' | '2y' | '3y'>('1d');
 
   useEffect(() => {
     fetch('http://localhost:3001/api/indices')
@@ -73,6 +101,45 @@ export default function Dashboard() {
     {} as Record<string, IndexData[]>
   );
 
+  useEffect(() => {
+    if (!selectedIndex) {
+      return;
+    }
+
+    setDetailsLoading(true);
+    setDetailsError(null);
+
+    fetch(`http://localhost:3001/api/indices/${selectedIndex.code}/details`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (!json.success) {
+          throw new Error('详情加载失败');
+        }
+        setDetails(json.data);
+      })
+      .catch(() => {
+        setDetails(null);
+        setDetailsError('详情加载失败');
+      })
+      .finally(() => {
+        setDetailsLoading(false);
+      });
+  }, [selectedIndex]);
+
+  const openDetails = (item: IndexData) => {
+    setSelectedIndex(item);
+    setDetails(null);
+    setDetailsError(null);
+    setKlineRange('1d');
+    setTrendRange('1d');
+  };
+
+  const closeDetails = () => {
+    setSelectedIndex(null);
+    setDetails(null);
+    setDetailsError(null);
+  };
+
   if (loading) {
     return <div className="loading">加载中...</div>;
   }
@@ -95,7 +162,7 @@ export default function Dashboard() {
             <div className="section-title">{category}</div>
             <div className="section-grid">
               {items.map((item) => (
-                <IndexCard key={item.code} data={item} />
+                <IndexCard key={item.code} data={item} onClick={() => openDetails(item)} />
               ))}
             </div>
           </div>
@@ -107,6 +174,19 @@ export default function Dashboard() {
           ? new Date(indices[0].timestamp).toLocaleTimeString()
           : '-'}
       </div>
+      {selectedIndex ? (
+        <IndexDetailModal
+          index={selectedIndex}
+          details={details}
+          loading={detailsLoading}
+          error={detailsError}
+          klineRange={klineRange}
+          trendRange={trendRange}
+          onClose={closeDetails}
+          onKlineRangeChange={setKlineRange}
+          onTrendRangeChange={setTrendRange}
+        />
+      ) : null}
     </>
   );
 }

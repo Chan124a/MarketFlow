@@ -55,6 +55,26 @@ body {
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid transparent;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(233, 69, 96, 0.45);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.card:focus-visible {
+  outline: 2px solid #5bc0eb;
+  outline-offset: 3px;
 }
 
 .card-title {
@@ -90,6 +110,12 @@ body {
   border-top: 1px solid #2a2a4a;
   font-size: 14px;
   color: #666;
+}
+
+.card-action {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #7dd3fc;
 }
 
 .volume {
@@ -130,4 +156,250 @@ body {
   color: #666;
   margin-top: 20px;
   font-size: 14px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 18, 0.72);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.detail-modal {
+  position: relative;
+  width: min(1100px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(91, 192, 235, 0.18), transparent 30%),
+    linear-gradient(180deg, #10192f, #0d1326);
+  border: 1px solid rgba(125, 211, 252, 0.15);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  padding: 28px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  padding-right: 48px;
+}
+
+.detail-header h2 {
+  font-size: 34px;
+  margin-top: 6px;
+}
+
+.detail-code {
+  color: #7dd3fc;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+
+.detail-price-block {
+  text-align: right;
+}
+
+.detail-price {
+  font-size: 42px;
+  font-weight: 700;
+}
+
+.detail-price-change {
+  margin-top: 8px;
+  font-size: 18px;
+}
+
+.detail-meta {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  color: #8ea5c6;
+  margin-top: 18px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.detail-state {
+  padding: 32px 0;
+  text-align: center;
+  color: #9fb3d1;
+}
+
+.detail-state-error {
+  color: #f97373;
+}
+
+.detail-sections {
+  display: grid;
+  gap: 20px;
+}
+
+.chart-panel {
+  background: rgba(11, 18, 36, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.chart-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.chart-panel-head-wrap {
+  align-items: flex-start;
+}
+
+.chart-panel h3 {
+  font-size: 18px;
+}
+
+.segmented-control {
+  display: flex;
+  gap: 8px;
+}
+
+.segmented-control-wrap {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.segmented-control button {
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  color: #b6c8e2;
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.segmented-control button.active {
+  background: linear-gradient(135deg, #e94560, #fb7185);
+  color: #fff;
+  border-color: transparent;
+}
+
+.chart-shell {
+  display: grid;
+  gap: 10px;
+}
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+}
+
+.chart-bg {
+  fill: #0a1224;
+}
+
+.candle-wick {
+  stroke-width: 2;
+}
+
+.candle-body {
+  stroke-width: 0;
+}
+
+.candle-up .candle-wick,
+.candle-up .candle-body {
+  stroke: #f87171;
+  fill: #f87171;
+}
+
+.candle-down .candle-wick,
+.candle-down .candle-body {
+  stroke: #34d399;
+  fill: #34d399;
+}
+
+.trend-line {
+  fill: none;
+  stroke: #5bc0eb;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-summary,
+.chart-footnote {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #8ea5c6;
+  font-size: 13px;
+}
+
+.chart-empty {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8ea5c6;
+  background: #0a1224;
+  border-radius: 18px;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 16px;
+  }
+
+  .detail-modal {
+    padding: 20px;
+  }
+
+  .detail-header {
+    flex-direction: column;
+    padding-right: 36px;
+  }
+
+  .detail-header h2 {
+    font-size: 28px;
+  }
+
+  .detail-price-block {
+    text-align: left;
+  }
+
+  .detail-price {
+    font-size: 34px;
+  }
+
+  .chart-panel-head,
+  .chart-panel-head-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .segmented-control-wrap {
+    justify-content: flex-start;
+  }
 }

@@ -1,15 +1,18 @@
 {
-  "name": "a-stock-dashboard",
+  "name": "marketflow",
   "version": "1.0.0",
-  "description": "大盘数据看板 - 上证/深证/创业板/科创板",
-  "main": "src/index.js",
-  "type": "module",
+  "description": "大盘数据看板 - A股/港股/美股",
+  "private": true,
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "npm run start:backend && npm run start:frontend",
+    "start:backend": "cd backend && npm run start:prod",
+    "start:frontend": "cd frontend && npm run start"
   },
-  "dependencies": {
-    "fastify": "^4.28.0",
-    "axios": "^1.7.0"
+  "devDependencies": {
+    "concurrently": "^8.2.0"
   }
 }

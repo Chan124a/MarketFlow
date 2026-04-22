@@ -19,4 +19,23 @@ export interface IndexData {
     volume: number;
     timestamp: string;
 }
+export interface CandlePoint {
+    time: string;
+    open: number;
+    close: number;
+    high: number;
+    low: number;
+    volume: number;
+}
+export interface TrendPoint {
+    time: string;
+    value: number;
+}
+export interface IndexDetails {
+    code: string;
+    name: string;
+    kline: Record<'1d' | '3d' | '7d', CandlePoint[]>;
+    trend: Record<'1d' | '1m' | '3m' | '6m' | '9m' | '1y' | '2y' | '3y', TrendPoint[]>;
+}
 export declare function fetchIndices(): Promise<IndexData[]>;
+export declare function fetchIndexDetails(code: string): Promise<IndexDetails>;

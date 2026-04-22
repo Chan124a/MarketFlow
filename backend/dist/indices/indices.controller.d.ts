@@ -5,6 +5,11 @@ export declare class IndicesController {
     findAll(): Promise<{
         success: boolean;
         data: import("./fetcher").IndexData[];
+        stale: boolean;
+    }>;
+    findDetails(code: string): Promise<{
+        success: boolean;
+        data: import("./fetcher").IndexDetails;
     }>;
     findOne(code: string): Promise<{
         success: boolean;

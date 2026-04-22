@@ -14,13 +14,19 @@ function formatVolume(v: number): string {
   return v.toFixed(0);
 }
 
-export default function IndexCard({ data }: { data: IndexData }) {
+export default function IndexCard({
+  data,
+  onClick,
+}: {
+  data: IndexData;
+  onClick: () => void;
+}) {
   const isUp = data.change >= 0;
   const cls = isUp ? 'up' : 'down';
   const sign = isUp ? '+' : '';
 
   return (
-    <div className="card">
+    <button type="button" className="card" onClick={onClick}>
       <div className="card-title">{data.name}</div>
       <div className="card-price">{data.price.toFixed(2)}</div>
       <div className={`card-change ${cls}`}>
@@ -36,6 +42,7 @@ export default function IndexCard({ data }: { data: IndexData }) {
       <div className="card-meta">
         成交量 <span className="volume">{formatVolume(data.volume)}</span>
       </div>
-    </div>
+      <div className="card-action">点击查看详情</div>
+    </button>
   );
 }
