@@ -1,0 +1,15 @@
+{
+  "name": "a-stock-dashboard",
+  "version": "1.0.0",
+  "description": "大盘数据看板 - 上证/深证/创业板/科创板",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "fastify": "^4.28.0",
+    "axios": "^1.7.0"
+  }
+}
