@@ -14,11 +14,6 @@ exports.INDEX_CODES = {
     'usINX': '标普500',
     'usDJI': '道琼斯',
 };
-const KLINE_WINDOWS = {
-    '1d': 1,
-    '3d': 3,
-    '7d': 7,
-};
 const TREND_WINDOWS = {
     '1m': 22,
     '3m': 66,
@@ -56,28 +51,38 @@ async function fetchIndices() {
 exports.fetchIndices = fetchIndices;
 async function fetchIndexDetails(code) {
     const name = exports.INDEX_CODES[code] ?? code;
-    const [dailyResult, intradayResult, multiDayResult] = await Promise.allSettled([
+    const [dailyResult, weeklyResult, monthlyResult, intradayResult, multiDayResult] = await Promise.allSettled([
         fetchDailySeries(code),
+        fetchPeriodSeries(code, 'week'),
+        fetchPeriodSeries(code, 'month'),
         fetchIntradaySeries(code),
         fetchMultiDayIntradaySeries(code),
     ]);
     const dailySeries = dailyResult.status === 'fulfilled' ? dailyResult.value : [];
+    const weeklySeries = weeklyResult.status === 'fulfilled' ? weeklyResult.value : [];
+    const monthlySeries = monthlyResult.status === 'fulfilled' ? monthlyResult.value : [];
     const intradaySeries = intradayResult.status === 'fulfilled' ? intradayResult.value : [];
     const multiDaySeries = multiDayResult.status === 'fulfilled' ? multiDayResult.value : [];
-    const recentThreeDays = multiDaySeries.slice(-3).flatMap((item) => item.data);
+    const currentDate = intradaySeries[0]?.time.split(' ')[0];
+    const normalizedMultiDaySeries = currentDate
+        ? multiDaySeries.filter((item) => item.date !== currentDate)
+        : multiDaySeries;
+    const recentThreeDays = [...normalizedMultiDaySeries.slice(-2).flatMap((item) => item.data), ...intradaySeries];
     return {
         code,
         name,
-        kline: {
-            '1d': toIntradayCandles(intradaySeries, 5),
-            '3d': recentThreeDays.length > 0 ? toIntradayCandles(recentThreeDays, 30) : sliceTail(dailySeries, KLINE_WINDOWS['3d']),
-            '7d': sliceTail(dailySeries, KLINE_WINDOWS['7d']),
+        marketChart: {
+            time: toTrendPointsFromIntraday(intradaySeries),
+            day: dailySeries,
+            week: weeklySeries,
+            month: monthlySeries,
         },
         trend: {
+            '3d': recentThreeDays.length > 0 ? toTrendPointsFromIntraday(recentThreeDays) : toTrendPoints(sliceTail(dailySeries, 3)),
+            '7d': toTrendPoints(sliceTail(dailySeries, 7)),
             '1m': toTrendPoints(sliceTail(dailySeries, TREND_WINDOWS['1m'])),
             '3m': toTrendPoints(sliceTail(dailySeries, TREND_WINDOWS['3m'])),
             '6m': toTrendPoints(sliceTail(dailySeries, TREND_WINDOWS['6m'])),
-            '9m': toTrendPoints(sliceTail(dailySeries, TREND_WINDOWS['9m'])),
             '1y': toTrendPoints(sliceTail(dailySeries, TREND_WINDOWS['1y'])),
             '2y': toTrendPoints(sliceTail(dailySeries, TREND_WINDOWS['2y'])),
             '3y': toTrendPoints(sliceTail(dailySeries, TREND_WINDOWS['3y'])),
@@ -86,9 +91,15 @@ async function fetchIndexDetails(code) {
 }
 exports.fetchIndexDetails = fetchIndexDetails;
 async function fetchDailySeries(code) {
-    const response = await axios_1.default.get(`https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${code},day,,,900,qfq`, { timeout: 5000 });
+    return fetchPeriodSeries(code, 'day');
+}
+async function fetchPeriodSeries(code, period) {
+    const response = await axios_1.default.get(`https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${code},${period},,,900,qfq`, { timeout: 5000 });
     const quote = response.data?.data?.[code];
-    const rawSeries = quote?.qfqday ?? quote?.day ?? quote?.hfqday ?? [];
+    const rawSeries = (period === 'day' ? quote?.qfqday : null) ??
+        quote?.[period] ??
+        (period === 'day' ? quote?.day ?? quote?.hfqday : null) ??
+        [];
     if (!Array.isArray(rawSeries)) {
         return [];
     }
@@ -196,6 +207,12 @@ function toTrendPoints(series) {
     return series.map((item) => ({
         time: item.time,
         value: item.close,
+    }));
+}
+function toTrendPointsFromIntraday(series) {
+    return series.map((item) => ({
+        time: item.time,
+        value: item.value,
     }));
 }
 function toIntradayCandles(series, intervalMinutes) {
