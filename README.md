@@ -68,7 +68,9 @@ npm install
 npm run dev
 ```
 
-访问 http://localhost:3001
+访问前端页面 http://localhost:3000
+
+后端 API 地址为 http://localhost:3001/api/indices
 
 ## API
 
@@ -95,4 +97,3 @@ npm run dev
 ## License
 
 MIT# MarketFlow
-
