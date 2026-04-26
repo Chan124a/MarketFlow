@@ -1,0 +1,33 @@
+{
+  "name": "marketflow-workflows",
+  "version": "0.1.0",
+  "description": "Agent workflows for maintaining, extending, and deploying MarketFlow.",
+  "author": {
+    "name": "MarketFlow maintainers"
+  },
+  "license": "UNLICENSED",
+  "keywords": [
+    "marketflow",
+    "nestjs",
+    "nextjs",
+    "market-data"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "MarketFlow Workflows",
+    "shortDescription": "Project-specific workflows for MarketFlow agents.",
+    "longDescription": "Reusable agent skills for understanding MarketFlow architecture, adding market indices, and building or deploying the app.",
+    "developerName": "MarketFlow maintainers",
+    "category": "Coding",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use MarketFlow architecture notes.",
+      "Add a new market index.",
+      "Build and deploy MarketFlow."
+    ],
+    "brandColor": "#0F766E"
+  }
+}

@@ -6,42 +6,28 @@
 
 | Layer | Technology |
 | --- | --- |
-| Frontend | Next.js 14, React 18, Socket.io-client |
+| Frontend | Next.js 14 (App Router), React 18, Socket.io-client |
 | Backend | NestJS 10, Socket.io, Axios |
-| Data Source | Tencent Finance APIs |
+| Data Source | Tencent Finance APIs (`gtimg.cn`) |
+| Visualization | Custom SVG Charts (Zero Dependencies) |
 
 ## Project Structure
 
-```text
-MarketFlow/
-├── backend/                  # NestJS API and WebSocket server
-│   ├── src/
-│   │   ├── main.ts           # Backend entry, listens on port 3001
-│   │   ├── app.module.ts
-│   │   ├── indices/          # Index API, service, and data fetcher
-│   │   └── websocket/        # Socket.io gateway and adapter
-│   ├── package.json
-│   └── tsconfig.json
-├── frontend/                 # Next.js dashboard
-│   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   └── globals.css
-│   ├── components/
-│   │   ├── IndexCard.tsx
-│   │   └── IndexDetailModal.tsx
-│   └── package.json
-├── package.json              # Root helper scripts
-└── README.md
-```
+MarketFlow is organized into a mono-repo structure with a separate backend and frontend. For a detailed breakdown of all directories and files, please refer to [**STRUCTURE.yml**](./STRUCTURE.yml).
+
+- **`backend/`**: NestJS API and WebSocket server for market data aggregation.
+- **`frontend/`**: Next.js App Router dashboard with custom SVG visualizations.
+- **`.skills/`**: Standardized procedural instructions for automation agents.
 
 ## Features
 
-- 展示 A 股、港股、美股主要指数
-- 通过 REST API 获取指数列表和详情
-- 通过 WebSocket 接收指数更新
-- 支持指数详情弹窗、K 线图和历史走势
-- 涨跌颜色提示
+- **Multi-Market Support:** 展示 A 股、港股、美股主要指数。
+- **Real-time Updates:** 通过 WebSocket 接收每 30 秒一次的指数自动更新。
+- **Interactive Visualization:** 支持分时图、日/周/月 K 线，以及长达 3 年的历史走势。
+- **Custom Charting Engine:** 基于纯 SVG 构建，轻量高效，支持鼠标追踪和实时 Tooltip。
+- **Intelligent Grouping:** 自动按 A 股、港股、美股进行区域划分。
+- **Chinese Market Styling:** 遵循国内涨红跌绿的色彩习惯。
+
 
 ## Quick Start
 
@@ -182,6 +168,16 @@ npm run dev
 backend:  npm run start:dev
 frontend: npm run dev
 ```
+
+## Project Skills
+
+Agent-facing project workflows live in `.skills/`:
+
+- `.skills/add-new-index.md` explains how to verify a Tencent Finance code, register it in `backend/src/indices/fetcher.ts`, add it to the frontend category map, and verify the data flow.
+- `.skills/deploy.md` documents production build, start, process-manager, and reverse-proxy steps for the backend and frontend.
+- `.skills/refresh-skills.sh` generates a prompt from recent git changes to update or create skill files when workflows change.
+
+When changes introduce a reusable workflow, update the relevant skill file or add a new one so future agents can repeat the process consistently.
 
 ## License
 

@@ -1,0 +1,37 @@
+project:
+  name: MarketFlow
+  description: Real-time stock index dashboard
+  structure:
+    - backend/:
+        description: NestJS API and WebSocket server
+        src/:
+          - main.ts: Backend entry point (port 3001)
+          - app.module.ts: Root application module
+          - indices/:
+              description: Market data logic & fetching
+              - fetcher.ts: Tencent Finance API parser
+              - indices.service.ts: Data lifecycle & 30s refresh loop
+              - indices.controller.ts: REST API endpoints
+          - websocket/:
+              description: Real-time communication via Socket.io
+              - adapter.ts: Custom Socket.io adapter
+              - events.service.ts: Internal pub/sub bridge
+              - indices.gateway.ts: WebSocket hub for client updates
+    - frontend/:
+        description: Next.js dashboard
+        app/:
+          - layout.tsx: Root layout
+          - page.tsx: Main dashboard container & live state management
+          - globals.css: Dark mode UI styles
+        components/:
+          - IndexCard.tsx: Individual index summary component
+          - IndexDetailModal.tsx: Detailed modal with custom SVG charts
+    - .skills/:
+        description: Standardized agent workflow instructions
+        - architecture.md: Deep dive into system design
+        - add-new-index.md: Steps for adding new market indices
+        - deploy.md: Production deployment guide
+        - TEMPLATE.md: Standard skill format
+    - package.json: Root scripts for concurrent development
+    - AGENTS.md: Developer/Agent guidelines
+    - README.md: Main project documentation

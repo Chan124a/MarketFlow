@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Generate a skills refresh prompt after every N commits.
+#
+# Configure:
+#   git config marketflow.skillsRefreshInterval 3
+# Disable:
+#   git config marketflow.skillsRefreshInterval 0
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+INTERVAL="$(git config --get marketflow.skillsRefreshInterval || echo 3)"
+if ! [[ "$INTERVAL" =~ ^[0-9]+$ ]] || [[ "$INTERVAL" -eq 0 ]]; then
+  exit 0
+fi
+
+COUNT_FILE=".git/marketflow-skills-refresh-count"
+PROMPT_FILE=".git/marketflow-skills-refresh-prompt.md"
+
+COUNT=0
+if [[ -f "$COUNT_FILE" ]]; then
+  COUNT="$(cat "$COUNT_FILE")"
+fi
+
+if ! [[ "$COUNT" =~ ^[0-9]+$ ]]; then
+  COUNT=0
+fi
+
+COUNT=$((COUNT + 1))
+
+if [[ "$COUNT" -lt "$INTERVAL" ]]; then
+  printf '%s\n' "$COUNT" > "$COUNT_FILE"
+  exit 0
+fi
+
+printf '0\n' > "$COUNT_FILE"
+bash .skills/refresh-skills.sh "$INTERVAL" > "$PROMPT_FILE"
+
+cat <<MSG
+
+MarketFlow skills refresh prompt generated:
+  $PROMPT_FILE
+
+Review it with an agent if the recent commits changed a reusable workflow.
+
+MSG
