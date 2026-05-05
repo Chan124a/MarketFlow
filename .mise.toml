@@ -1,0 +1,27 @@
+[tools]
+node = "20"
+python = "3.12"
+uv = "latest"
+
+[tasks.setup]
+description = "Install Node dependencies and sync the Python quant environment with uv"
+run = "npm run setup"
+
+[tasks.dev]
+description = "Run frontend, backend, and quant service together"
+run = "npm run dev"
+
+[tasks.build]
+description = "Build backend and frontend"
+run = [
+  "cd backend && npm run build",
+  "cd frontend && npm run build",
+]
+
+[tasks.check]
+description = "Run lightweight validation for all services"
+run = [
+  "cd backend && npm run build",
+  "cd frontend && npm run build",
+  "cd quant && PYTHONPYCACHEPREFIX=/tmp/marketflow-pycache uv run python -m py_compile app.py",
+]

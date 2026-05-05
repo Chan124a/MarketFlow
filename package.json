@@ -4,9 +4,11 @@
   "description": "大盘数据看板 - A股/港股/美股",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "setup": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../quant && uv sync",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:quant\"",
     "dev:backend": "cd backend && npm run start:dev",
     "dev:frontend": "cd frontend && npm run dev",
+    "dev:quant": "cd quant && uv run uvicorn app:app --reload --port 8000",
     "build": "cd frontend && npm run build",
     "start": "npm run start:backend && npm run start:frontend",
     "start:backend": "cd backend && npm run start:prod",

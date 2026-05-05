@@ -5,5 +5,6 @@ import { IndicesController } from './indices.controller';
 @Module({
   providers: [IndicesService],
   controllers: [IndicesController],
+  exports: [IndicesService],
 })
 export class IndicesModule {}

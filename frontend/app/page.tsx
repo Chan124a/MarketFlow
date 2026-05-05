@@ -5,6 +5,8 @@ import { io, Socket } from 'socket.io-client';
 import IndexCard from '@/components/IndexCard';
 import IndexDetailModal from '@/components/IndexDetailModal';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+
 interface IndexData {
   code: string;
   name: string;
@@ -54,7 +56,7 @@ export default function Dashboard() {
   const [trendRange, setTrendRange] = useState<string>('1m');
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/indices')
+    fetch(`${BACKEND_URL}/api/indices`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success) {
@@ -67,7 +69,7 @@ export default function Dashboard() {
         setLoading(false);
       });
 
-    const socket: Socket = io('http://localhost:3001', { transports: ['websocket'] });
+    const socket: Socket = io(BACKEND_URL, { transports: ['websocket'] });
 
     socket.on('indices:update', (data: { success: boolean; data: IndexData[] }) => {
       if (data.success) {
@@ -109,7 +111,7 @@ export default function Dashboard() {
     setDetailsLoading(true);
     setDetailsError(null);
 
-    fetch(`http://localhost:3001/api/indices/${selectedIndex.code}/details`)
+    fetch(`${BACKEND_URL}/api/indices/${selectedIndex.code}/details`)
       .then((res) => res.json())
       .then((json) => {
         if (!json.success) {

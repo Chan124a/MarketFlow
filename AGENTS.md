@@ -2,27 +2,37 @@
 
 ## Project Structure & Module Organization
 
-MarketFlow is split into a NestJS backend and a Next.js frontend.
+MarketFlow is split into a NestJS backend, a Next.js frontend, and a Python quant service.
 - **Backend (`backend/`):** A NestJS app using a 30-second refresh loop to fetch index data from Tencent Finance. It uses a custom `fetcher.ts` for parsing and a Socket.io bridge for real-time broadcasts.
 - **Frontend (`frontend/`):** A Next.js 14 app featuring custom SVG-based charting (no heavy external libraries). It uses a categorization system for A-shares, Hong Kong, and US markets.
+- **Quant (`quant/`):** A Python FastAPI service for quantitative signals and future backtesting. Manage Python dependencies with `uv` through `quant/pyproject.toml`.
 
 Refer to `.skills/architecture.md` for a deep dive into data flow and component roles.
 
 ## Build, Test, and Development Commands
 
-Run installs separately where dependencies are used:
+Use `mise` to pin Node.js, Python, and `uv` versions:
 
 ```bash
-npm install
-cd backend && npm install
-cd frontend && npm install
+mise install
+mise run setup
+mise run dev
+```
+
+If `mise` is not available, install Node.js 20, Python 3.12, and `uv`, then run:
+
+```bash
+npm run setup
+npm run dev
 ```
 
 Key commands:
 
-- `npm run dev` starts backend and frontend concurrently from the repo root.
+- `npm run setup` installs root/backend/frontend npm dependencies and runs `uv sync` in `quant/`.
+- `npm run dev` starts backend, frontend, and quant services concurrently from the repo root.
 - `cd backend && npm run start:dev` runs the NestJS API locally.
 - `cd frontend && npm run dev` runs the Next.js app on `http://localhost:3000`.
+- `cd quant && uv run uvicorn app:app --reload --port 8000` runs the Python quant service locally.
 - `cd backend && npm run build` compiles TypeScript to `backend/dist/`.
 - `cd frontend && npm run build` builds the production frontend.
 - `cd frontend && npm run lint` runs Next.js linting.
@@ -40,7 +50,7 @@ No automated test runner is currently configured. For changes, run the relevant 
 Reusable agent workflows have two layers:
 - **Repo notes:** Source workflow notes live in `.skills/` and MUST follow the format defined in [**.skills/TEMPLATE.md**](./.skills/TEMPLATE.md), including YAML frontmatter.
 - **Agent plugin:** Codex-discoverable skills live in `plugins/marketflow-workflows/skills/*/SKILL.md` and are registered through `.agents/plugins/marketplace.json`.
-- **Workflow:** Use `add-new-index` when adding market index codes, `deploy-marketflow` when building or deploying the app, and `maintain-skills` when keeping repo notes and plugin skills current.
+- **Workflow:** Use `add-new-index` when adding market index codes, `quant-module` when adding or changing quant strategies/proxy APIs/dependencies, `deploy-marketflow` when building or deploying the app, and `maintain-skills` when keeping repo notes and plugin skills current.
 - **Maintenance:** The helper `.skills/refresh-skills.sh` can generate a prompt from recent git changes to keep the workflow notes current.
 - **Hook reminders:** Run `bash .skills/install-hooks.sh 3` once per clone to enable a post-commit reminder that generates a skills refresh prompt every three commits. Use `1` for every commit or `0` to disable.
 

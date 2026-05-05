@@ -6,8 +6,13 @@ backend/dist/
 frontend/.next/
 frontend/out/
 *.tsbuildinfo
+__pycache__/
+.pytest_cache/
 
 # Env files
 .env
 .env.local
 .env.*.local
+
+# Python virtualenvs
+.venv/

@@ -8,6 +8,7 @@
 | --- | --- |
 | Frontend | Next.js 14 (App Router), React 18, Socket.io-client |
 | Backend | NestJS 10, Socket.io, Axios |
+| Quant | Python 3.12, uv, FastAPI, pandas, NumPy |
 | Data Source | Tencent Finance APIs (`gtimg.cn`) |
 | Visualization | Custom SVG Charts (Zero Dependencies) |
 
@@ -17,6 +18,7 @@ MarketFlow is organized into a mono-repo structure with a separate backend and f
 
 - **`backend/`**: NestJS API and WebSocket server for market data aggregation.
 - **`frontend/`**: Next.js App Router dashboard with custom SVG visualizations.
+- **`quant/`**: Python FastAPI service for quantitative signals and future backtesting.
 - **`.skills/`**: Standardized procedural instructions for automation agents.
 
 ## Features
@@ -31,7 +33,39 @@ MarketFlow is organized into a mono-repo structure with a separate backend and f
 
 ## Quick Start
 
-### 1. Start Backend
+### Lightweight Dev Environment
+
+Use `mise` to pin Node.js, Python, and uv without containers:
+
+```bash
+mise install
+mise run setup
+mise run dev
+```
+
+This starts:
+
+```text
+frontend: http://localhost:3000
+backend:  http://localhost:3001
+quant:    http://localhost:8000
+```
+
+Useful checks:
+
+```bash
+curl http://localhost:3001/api/indices
+curl http://localhost:8000/health
+```
+
+If you do not use `mise`, install Node.js 20, Python 3.12, and uv yourself, then run:
+
+```bash
+npm run setup
+npm run dev
+```
+
+### 1. Start Backend Only
 
 ```bash
 cd backend
@@ -47,7 +81,7 @@ http://localhost:3001
 
 后端根路径 `/` 没有页面，浏览器直接打开 `http://localhost:3001` 会返回 404。请访问 API 路径或启动前端页面。
 
-### 2. Start Frontend
+### 2. Start Frontend Only
 
 在另一个终端运行：
 
@@ -93,7 +127,39 @@ npm run build
 npm run start
 ```
 
+### Quant
+
+```bash
+cd quant
+uv sync
+uv run uvicorn app:app --reload --port 8000
+```
+
 ## API
+
+### Quant Service
+
+The Python quant service is available locally at:
+
+```text
+http://localhost:8000
+```
+
+Current endpoints:
+
+```text
+GET /health
+GET /strategies
+POST /signals
+```
+
+The NestJS backend also exposes proxy endpoints so the frontend can keep using the backend API surface:
+
+```text
+GET /api/quant/health
+GET /api/quant/strategies
+GET /api/quant/signals
+```
 
 ### GET /api/indices
 
@@ -155,11 +221,18 @@ indices:update
 
 ## Root Scripts
 
-根目录提供了同时启动前后端的辅助脚本：
+根目录提供了轻量本机开发脚本：
 
 ```bash
-npm install
+npm run setup
 npm run dev
+```
+
+With `mise`, use:
+
+```bash
+mise run setup
+mise run dev
 ```
 
 该脚本会并行运行：
@@ -167,6 +240,7 @@ npm run dev
 ```text
 backend:  npm run start:dev
 frontend: npm run dev
+quant:    uv run uvicorn app:app --reload --port 8000
 ```
 
 ## Project Skills

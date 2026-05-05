@@ -26,12 +26,17 @@ project:
         components/:
           - IndexCard.tsx: Individual index summary component
           - IndexDetailModal.tsx: Detailed modal with custom SVG charts
+    - quant/:
+        description: Python FastAPI quantitative analysis service
+        - app.py: Quant service API with health, strategy, and signal endpoints
+        - pyproject.toml: Python service metadata and uv-managed dependencies
     - .skills/:
         description: Standardized agent workflow instructions
         - architecture.md: Deep dive into system design
         - add-new-index.md: Steps for adding new market indices
         - deploy.md: Production deployment guide
         - TEMPLATE.md: Standard skill format
-    - package.json: Root scripts for concurrent development
+    - package.json: Root scripts for setup and concurrent development
+    - .mise.toml: Pinned Node/Python/uv versions and local development tasks
     - AGENTS.md: Developer/Agent guidelines
     - README.md: Main project documentation
