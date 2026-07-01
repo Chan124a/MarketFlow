@@ -1,5 +1,10 @@
 import axios from 'axios';
 
+export const STOCK_CODES: Record<string, string> = {
+  'hk00700': '腾讯控股',
+  'hk09988': '阿里巴巴-W',
+};
+
 export const INDEX_CODES = {
   'sh000001': '上证指数',
   'sz399001': '深证成指',
@@ -13,6 +18,8 @@ export const INDEX_CODES = {
   'usDJI': '道琼斯',
 };
 
+const ALL_CODES = { ...INDEX_CODES, ...STOCK_CODES };
+
 export interface IndexData {
   code: string;
   name: string;
@@ -20,6 +27,8 @@ export interface IndexData {
   change: number;
   changePercent: number;
   volume: number;
+  pe?: number;
+  marketCap?: number;
   timestamp: string;
 }
 
@@ -70,6 +79,38 @@ const TREND_WINDOWS = {
   '3y': 756,
 } as const;
 
+export interface StockFinancials {
+  code: string;
+  name: string;
+  years: FinancialYear[];
+}
+
+export interface FinancialYear {
+  year: string;
+  revenue: number;
+  netProfit: number;
+  eps: number;
+  totalAssets: number;
+  totalLiabilities: number;
+  shareholdersEquity: number;
+}
+
+function createIndexData(code: string, name: string, fields: string[]): IndexData {
+  const pe = parseFloat(fields[39]);
+  const marketCap = parseFloat(fields[45]);
+  return {
+    code,
+    name,
+    price: parseFloat(fields[3]) || 0,
+    change: parseFloat(fields[31]) || 0,
+    changePercent: parseFloat(fields[32]) || 0,
+    volume: parseFloat(fields[6]) || 0,
+    ...(Number.isFinite(pe) && pe > 0 ? { pe } : {}),
+    ...(Number.isFinite(marketCap) && marketCap > 0 ? { marketCap } : {}),
+    timestamp: new Date().toISOString(),
+  };
+}
+
 export async function fetchIndices(): Promise<IndexData[]> {
   const codes = Object.keys(INDEX_CODES).join(',');
   const response = await axios.get(`http://qt.gtimg.cn/q=${codes}`, { timeout: 5000 });
@@ -81,27 +122,42 @@ export async function fetchIndices(): Promise<IndexData[]> {
 
   while ((match = pattern.exec(text)) !== null) {
     const code = match[1];
-    const name = INDEX_CODES[code as keyof typeof INDEX_CODES];
+    const name = ALL_CODES[code as keyof typeof ALL_CODES];
     if (!name) continue;
 
     const fields = match[2].split('~');
+    result.push(createIndexData(code, name, fields));
+  }
 
-    result.push({
-      code,
-      name,
-      price: parseFloat(fields[3]) || 0,
-      change: parseFloat(fields[31]) || 0,
-      changePercent: parseFloat(fields[32]) || 0,
-      volume: parseFloat(fields[6]) || 0,
-      timestamp: new Date().toISOString(),
-    });
+  return result;
+}
+
+export async function fetchStocks(): Promise<IndexData[]> {
+  const stockCodes = Object.keys(STOCK_CODES);
+  if (stockCodes.length === 0) return [];
+
+  const codes = stockCodes.join(',');
+  const response = await axios.get(`http://qt.gtimg.cn/q=${codes}`, { timeout: 5000 });
+  const text = response.data;
+  const result: IndexData[] = [];
+
+  const pattern = /v_(\w+)="([^"]+)"/g;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    const code = match[1];
+    const name = STOCK_CODES[code];
+    if (!name) continue;
+
+    const fields = match[2].split('~');
+    result.push(createIndexData(code, name, fields));
   }
 
   return result;
 }
 
 export async function fetchIndexDetails(code: string): Promise<IndexDetails> {
-  const name = INDEX_CODES[code as keyof typeof INDEX_CODES] ?? code;
+  const name = ALL_CODES[code as keyof typeof ALL_CODES] ?? code;
   const [dailyResult, weeklyResult, monthlyResult, intradayResult, multiDayResult] = await Promise.allSettled([
     fetchDailySeries(code),
     fetchPeriodSeries(code, 'week'),
@@ -382,4 +438,50 @@ function sliceTail<T>(items: T[], size: number): T[] {
 function toNumber(value: unknown): number {
   const result = Number(value);
   return Number.isFinite(result) ? result : 0;
+}
+
+export async function fetchStockFinancials(code: string): Promise<StockFinancials | null> {
+  const name = STOCK_CODES[code];
+  if (!name) return null;
+
+  try {
+    const response = await axios.get(
+      `https://web.ifzq.gtimg.cn/appstock/app/profit/get?symbol=${code}&type=year`,
+      { timeout: 5000 }
+    );
+
+    const profitData = response.data?.data?.[code]?.profit?.year;
+    if (!Array.isArray(profitData) || profitData.length === 0) {
+      return null;
+    }
+
+    const years: FinancialYear[] = profitData
+      .map((item: unknown) => parseFinancialYear(item))
+      .filter((item: FinancialYear | null): item is FinancialYear => item !== null)
+      .sort((a, b) => a.year.localeCompare(b.year));
+
+    return { code, name, years };
+  } catch {
+    return null;
+  }
+}
+
+function parseFinancialYear(item: unknown): FinancialYear | null {
+  if (!Array.isArray(item) || item.length < 9) return null;
+
+  const [year, , revenue, netProfit, , , eps, totalAssets, totalLiabilities, shareholdersEquity] = item;
+
+  const rev = toNumber(revenue);
+  const np = toNumber(netProfit);
+  if (!rev && !np) return null;
+
+  return {
+    year: String(year),
+    revenue: rev,
+    netProfit: np,
+    eps: toNumber(eps),
+    totalAssets: toNumber(totalAssets),
+    totalLiabilities: toNumber(totalLiabilities),
+    shareholdersEquity: toNumber(shareholdersEquity),
+  };
 }

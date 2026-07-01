@@ -11,6 +11,8 @@ interface IndexData {
   change: number;
   changePercent: number;
   volume: number;
+  pe?: number;
+  marketCap?: number;
   timestamp: string;
 }
 
@@ -35,9 +37,26 @@ interface IndexDetails {
   trend: Record<string, TrendPoint[]>;
 }
 
+interface FinancialYear {
+  year: string;
+  revenue: number;
+  netProfit: number;
+  eps: number;
+  totalAssets: number;
+  totalLiabilities: number;
+  shareholdersEquity: number;
+}
+
+interface StockFinancials {
+  code: string;
+  name: string;
+  years: FinancialYear[];
+}
+
 interface Props {
   index: IndexData;
   details: IndexDetails | null;
+  financials: StockFinancials | null;
   loading: boolean;
   error: string | null;
   klineRange: string;
@@ -54,6 +73,14 @@ function formatVolume(v: number): string {
   if (v >= 100000000) return (v / 100000000).toFixed(2) + '亿';
   if (v >= 10000) return (v / 10000).toFixed(2) + '万';
   return v.toFixed(0);
+}
+
+function formatFinancial(v: number): string {
+  if (!v) return '-';
+  const abs = Math.abs(v);
+  if (abs >= 100000000) return (v / 100000000).toFixed(2) + '亿';
+  if (abs >= 10000) return (v / 10000).toFixed(2) + '万';
+  return v.toFixed(2);
 }
 
 function clamp(v: number, lo: number, hi: number) {
@@ -86,7 +113,6 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
   const xScale = (i: number) => PAD.left + (i / (data.length - 1)) * INNER_W;
   const yScale = (v: number) => PAD.top + INNER_H - ((v - minV) / range) * INNER_H;
 
-  // grid
   const gridLines = 5;
   const gridStep = range / gridLines;
 
@@ -94,7 +120,6 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
     .map((d, i) => `${i === 0 ? 'M' : 'L'}${xScale(i).toFixed(1)},${yScale(d.value).toFixed(1)}`)
     .join(' ');
 
-  // x-axis labels: show ~6 evenly spaced
   const xLabels: number[] = [];
   const step = Math.max(1, Math.floor(data.length / 6));
   for (let i = 0; i < data.length; i += step) xLabels.push(i);
@@ -118,7 +143,6 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
       >
         <rect className="chart-bg" x={0} y={0} width={W} height={H} rx={12} />
 
-        {/* grid lines */}
         {Array.from({ length: gridLines + 1 }, (_, i) => {
           const v = minV + gridStep * i;
           const y = yScale(v);
@@ -132,11 +156,9 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
           );
         })}
 
-        {/* axes */}
         <line className="chart-axis-line" x1={PAD.left} x2={PAD.left} y1={PAD.top} y2={PAD.top + INNER_H} />
         <line className="chart-axis-line" x1={PAD.left} x2={PAD.left + INNER_W} y1={PAD.top + INNER_H} y2={PAD.top + INNER_H} />
 
-        {/* x labels */}
         {xLabels.map((i) => (
           <text
             key={i}
@@ -150,10 +172,8 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
           </text>
         ))}
 
-        {/* trend line */}
         <path className="trend-line" d={pathD} />
 
-        {/* crosshair */}
         {hover && (
           <>
             <line
@@ -172,7 +192,6 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
           </>
         )}
 
-        {/* hit area */}
         <rect
           className="chart-hit-area"
           x={PAD.left}
@@ -182,7 +201,6 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
         />
       </svg>
 
-      {/* floating tooltip */}
       {hover && hovered && (
         <div
           className="chart-tooltip chart-tooltip-floating"
@@ -193,7 +211,6 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
         </div>
       )}
 
-      {/* summary */}
       <div className="chart-summary" style={{ marginTop: 6 }}>
         <span>最低 {minV.toFixed(2)}</span>
         <span>最高 {maxV.toFixed(2)}</span>
@@ -212,7 +229,6 @@ function CandleChart({ data }: { data: CandlePoint[] }) {
     return <div className="chart-empty">暂无数据</div>;
   }
 
-  // Use last 120 candles for readability
   const visible = data.slice(-120);
   const highs = visible.map((d) => d.high);
   const lows = visible.map((d) => d.low);
@@ -227,7 +243,6 @@ function CandleChart({ data }: { data: CandlePoint[] }) {
   const gridLines = 5;
   const gridStep = range / gridLines;
 
-  // x-axis labels
   const xLabels: number[] = [];
   const step = Math.max(1, Math.floor(visible.length / 6));
   for (let i = 0; i < visible.length; i += step) xLabels.push(i);
@@ -250,7 +265,6 @@ function CandleChart({ data }: { data: CandlePoint[] }) {
       >
         <rect className="chart-bg" x={0} y={0} width={W} height={H} rx={12} />
 
-        {/* grid */}
         {Array.from({ length: gridLines + 1 }, (_, i) => {
           const v = minV + gridStep * i;
           const y = yScale(v);
@@ -273,7 +287,6 @@ function CandleChart({ data }: { data: CandlePoint[] }) {
           </text>
         ))}
 
-        {/* candles */}
         {visible.map((d, i) => {
           const isUp = d.close >= d.open;
           const cx = xScale(i);
@@ -285,9 +298,7 @@ function CandleChart({ data }: { data: CandlePoint[] }) {
 
           return (
             <g key={i} className={isUp ? 'candle-up' : 'candle-down'}>
-              {/* wick */}
               <line className="candle-wick" x1={cx} x2={cx} y1={wickTop} y2={wickBot} />
-              {/* body */}
               <rect
                 className="candle-body"
                 x={cx - candleW / 2}
@@ -299,7 +310,6 @@ function CandleChart({ data }: { data: CandlePoint[] }) {
           );
         })}
 
-        {/* crosshair */}
         {hover && (
           <line
             className="chart-crosshair"
@@ -313,7 +323,6 @@ function CandleChart({ data }: { data: CandlePoint[] }) {
         <rect className="chart-hit-area" x={PAD.left} y={PAD.top} width={INNER_W} height={INNER_H} />
       </svg>
 
-      {/* tooltip */}
       {hover && hovered && (
         <div
           className="chart-tooltip chart-tooltip-floating"
@@ -332,6 +341,69 @@ function CandleChart({ data }: { data: CandlePoint[] }) {
         <span>最低 {minV.toFixed(2)}</span>
         <span>最高 {maxV.toFixed(2)}</span>
       </div>
+    </div>
+  );
+}
+
+/* ─── FinancialsPanel ────────────────────────────────────────────────────── */
+
+function FinancialsPanel({ data }: { data: StockFinancials }) {
+  if (!data.years || data.years.length === 0) {
+    return <div className="chart-empty" style={{ minHeight: 120 }}>暂无财务数据</div>;
+  }
+
+  const recentYears = data.years.slice(-5);
+
+  return (
+    <div className="financials-table-wrap">
+      <table className="financials-table">
+        <thead>
+          <tr>
+            <th></th>
+            {recentYears.map((y) => (
+              <th key={y.year}>{y.year}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>营业收入</td>
+            {recentYears.map((y) => (
+              <td key={y.year}>{formatFinancial(y.revenue)}</td>
+            ))}
+          </tr>
+          <tr>
+            <td>净利润</td>
+            {recentYears.map((y) => (
+              <td key={y.year}>{formatFinancial(y.netProfit)}</td>
+            ))}
+          </tr>
+          <tr>
+            <td>每股收益</td>
+            {recentYears.map((y) => (
+              <td key={y.year}>{y.eps ? y.eps.toFixed(2) : '-'}</td>
+            ))}
+          </tr>
+          <tr>
+            <td>总资产</td>
+            {recentYears.map((y) => (
+              <td key={y.year}>{formatFinancial(y.totalAssets)}</td>
+            ))}
+          </tr>
+          <tr>
+            <td>总负债</td>
+            {recentYears.map((y) => (
+              <td key={y.year}>{formatFinancial(y.totalLiabilities)}</td>
+            ))}
+          </tr>
+          <tr>
+            <td>股东权益</td>
+            {recentYears.map((y) => (
+              <td key={y.year}>{formatFinancial(y.shareholdersEquity)}</td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -359,6 +431,7 @@ const TREND_TABS = [
 export default function IndexDetailModal({
   index,
   details,
+  financials,
   loading,
   error,
   klineRange,
@@ -367,7 +440,6 @@ export default function IndexDetailModal({
   onKlineRangeChange,
   onTrendRangeChange,
 }: Props) {
-  // Close on Escape key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -391,18 +463,17 @@ export default function IndexDetailModal({
       }}
     >
       <div className="detail-modal" role="dialog" aria-modal="true" aria-label={`${index.name} 详情`}>
-        {/* close */}
         <button className="modal-close" onClick={onClose} aria-label="关闭">
           ×
         </button>
 
-        {/* header */}
         <div className="detail-header">
           <div>
             <div className="detail-code">{index.code.toUpperCase()}</div>
             <h2>{index.name}</h2>
             <div className="detail-meta">
               <span>成交量 {formatVolume(index.volume)}</span>
+              {index.pe != null && <span>市盈率 {index.pe.toFixed(2)}</span>}
               <span>
                 更新时间{' '}
                 {index.timestamp ? new Date(index.timestamp).toLocaleTimeString() : '-'}
@@ -419,13 +490,11 @@ export default function IndexDetailModal({
           </div>
         </div>
 
-        {/* body */}
         {loading && <div className="detail-state">加载中...</div>}
         {error && <div className="detail-state detail-state-error">{error}</div>}
 
         {!loading && !error && details && (
           <div className="detail-sections">
-            {/* K-line panel */}
             <div className="chart-panel">
               <div className="chart-panel-head chart-panel-head-wrap">
                 <h3>行情图</h3>
@@ -453,7 +522,6 @@ export default function IndexDetailModal({
               )}
             </div>
 
-            {/* Trend panel */}
             <div className="chart-panel">
               <div className="chart-panel-head">
                 <h3>历史走势</h3>
@@ -476,6 +544,15 @@ export default function IndexDetailModal({
                 <div className="chart-empty">暂无数据</div>
               )}
             </div>
+
+            {financials && financials.years && financials.years.length > 0 && (
+              <div className="chart-panel">
+                <div className="chart-panel-head">
+                  <h3>年度财务</h3>
+                </div>
+                <FinancialsPanel data={financials} />
+              </div>
+            )}
           </div>
         )}
       </div>

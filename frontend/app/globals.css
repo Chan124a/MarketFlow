@@ -476,3 +476,72 @@ body {
     justify-content: flex-start;
   }
 }
+
+/* ─── Financial card meta ───────────────────────────────────────────────── */
+
+.card-meta-fin {
+  border-top: none;
+  padding-top: 2px;
+}
+
+/* ─── Financials table ──────────────────────────────────────────────────── */
+
+.financials-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.financials-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: #d7e6fa;
+}
+
+.financials-table th,
+.financials-table td {
+  padding: 10px 14px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.financials-table th:first-child,
+.financials-table td:first-child {
+  text-align: left;
+  color: #8ea5c6;
+  font-weight: 500;
+}
+
+.financials-table thead th {
+  background: rgba(125, 211, 252, 0.08);
+  border-bottom: 1px solid rgba(125, 211, 252, 0.15);
+  color: #7dd3fc;
+  font-weight: 600;
+}
+
+.financials-table tbody td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.financials-table tbody tr:hover td {
+  background: rgba(125, 211, 252, 0.04);
+}
+
+.financials-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .financials-table {
+    font-size: 12px;
+  }
+
+  .financials-table th,
+  .financials-table td {
+    padding: 8px 10px;
+  }
+
+  .financials-table-wrap {
+    margin: 0 -18px;
+  }
+}
