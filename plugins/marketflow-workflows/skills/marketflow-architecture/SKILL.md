@@ -9,27 +9,26 @@ Use this skill before touching shared data flow, WebSocket behavior, chart rende
 
 ## Overview
 
-MarketFlow is split into three apps:
+MarketFlow is split into three active apps plus one legacy rollback backend:
 
-- `backend/`: NestJS API and real-time market data service.
+- `rust-backend/`: Default Rust API and Socket.io-compatible real-time market data service.
 - `frontend/`: Next.js 14 dashboard with custom SVG charts.
 - `quant/`: Python FastAPI service for quantitative signals and future backtesting.
+- `backend/`: Legacy NestJS API and real-time service retained for rollback and comparison.
 
-The backend fetches Tencent Finance index data, caches the latest state, broadcasts updates through Socket.io, and proxies quant requests to the Python service. The frontend loads the cached data, keeps a Socket.io connection open, and refreshes cards/charts from `indices:update` events.
+The Rust backend fetches Tencent Finance index data, caches the latest state, broadcasts updates through Socket.io-compatible `socketioxide`, and proxies quant requests to the Python service. The frontend loads the cached data, keeps a Socket.io connection open, and refreshes cards/charts from `indices:update` events.
 
 ## Backend Roles
 
-- `backend/src/indices/fetcher.ts`: Tencent Finance code list and response parsing.
-- `IndicesService`: 30-second refresh loop, cache ownership, and update event emission.
-- `IndicesController`: REST access to cached index state.
-- `QuantModule`: App-facing API bridge to the Python quant service.
-- `IndicesGateway`: Socket.io bridge that broadcasts index updates.
+- `rust-backend/src/fetcher.rs`: Tencent Finance code list and response parsing.
+- `rust-backend/src/server.rs`: 30-second refresh loop, cache ownership, REST API, Socket.io-compatible update broadcasting, and app-facing quant proxy.
+- `backend/`: Legacy NestJS implementation. Keep it available for rollback unless explicitly removed.
 
 ## Quant Roles
 
 - `quant/app.py`: FastAPI service with `/health`, `/strategies`, and `/signals`.
-- `backend/src/quant/quant.service.ts`: Sends cached index data to Python and returns quant responses.
-- Quantitative logic belongs in Python; NestJS should stay as integration/proxy code.
+- `rust-backend/src/server.rs`: Sends cached index data to Python and returns quant responses.
+- Quantitative logic belongs in Python; the Rust backend should stay as integration/proxy code.
 
 ## Frontend Roles
 
@@ -39,12 +38,11 @@ The backend fetches Tencent Finance index data, caches the latest state, broadca
 
 ## Data Lifecycle
 
-1. `IndicesService` calls the fetcher every 30 seconds.
+1. The Rust server calls the fetcher every 30 seconds.
 2. Parsed index records are cached in memory.
-3. The service emits an internal update event.
-4. `IndicesGateway` broadcasts `indices:update`.
+3. The Rust Socket.io layer broadcasts `indices:update`.
 5. The dashboard updates the visible cards and detail views.
-6. `QuantService` sends cached index data to the Python service for `/api/quant/signals`.
+6. The Rust quant proxy sends cached index data to the Python service for `/api/quant/signals`.
 
 ## Verification
 
@@ -60,4 +58,4 @@ After architecture or data-flow changes:
 
 - External data source: Tencent Finance APIs through `gtimg.cn`.
 - Market color convention: red means increase, green means decrease.
-- Keep `backend/src/indices/fetcher.ts` as the source of truth for index display names.
+- Keep `rust-backend/src/fetcher.rs` as the default source of truth for index display names. Mirror legacy NestJS only when maintaining rollback parity.

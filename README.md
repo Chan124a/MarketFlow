@@ -7,16 +7,18 @@
 | Layer | Technology |
 | --- | --- |
 | Frontend | Next.js 14 (App Router), React 18, Socket.io-client |
-| Backend | NestJS 10, Socket.io, Axios |
+| Backend | Rust 2024, axum, socketioxide, reqwest |
+| Legacy Backend | NestJS 10, Socket.io, Axios |
 | Quant | Python 3.12, uv, FastAPI, pandas, NumPy |
 | Data Source | Tencent Finance APIs (`gtimg.cn`) |
 | Visualization | Custom SVG Charts (Zero Dependencies) |
 
 ## Project Structure
 
-MarketFlow is organized into a mono-repo structure with a separate backend and frontend. For a detailed breakdown of all directories and files, please refer to [**STRUCTURE.yml**](./STRUCTURE.yml).
+MarketFlow is organized into a mono-repo structure with a Rust backend, a Next.js frontend, a Python quant service, and a retained NestJS legacy backend. For a detailed breakdown of all directories and files, please refer to [**STRUCTURE.yml**](./STRUCTURE.yml).
 
-- **`backend/`**: NestJS API and WebSocket server for market data aggregation.
+- **`rust-backend/`**: Default Rust API and Socket.io-compatible server for market data aggregation.
+- **`backend/`**: Legacy NestJS API and WebSocket server retained for rollback and output comparison.
 - **`frontend/`**: Next.js App Router dashboard with custom SVG visualizations.
 - **`quant/`**: Python FastAPI service for quantitative signals and future backtesting.
 - **`.skills/`**: Standardized procedural instructions for automation agents.
@@ -35,7 +37,7 @@ MarketFlow is organized into a mono-repo structure with a separate backend and f
 
 ### Lightweight Dev Environment
 
-Use `mise` to pin Node.js, Python, and uv without containers:
+Use `mise` to pin Node.js, Rust, Python, and uv without containers:
 
 ```bash
 mise install
@@ -47,7 +49,7 @@ This starts:
 
 ```text
 frontend: http://localhost:3000
-backend:  http://localhost:3001
+backend:  http://localhost:3001  (Rust)
 quant:    http://localhost:8000
 ```
 
@@ -58,7 +60,7 @@ curl http://localhost:3001/api/indices
 curl http://localhost:8000/health
 ```
 
-If you do not use `mise`, install Node.js 20, Python 3.12, and uv yourself, then run:
+If you do not use `mise`, install Node.js 20, Rust 1.94 or newer, Python 3.12, and uv yourself, then run:
 
 ```bash
 npm run setup
@@ -68,9 +70,8 @@ npm run dev
 ### 1. Start Backend Only
 
 ```bash
-cd backend
-npm install
-npm run start:dev
+cd rust-backend
+cargo run -- serve
 ```
 
 后端服务地址：
@@ -78,6 +79,8 @@ npm run start:dev
 ```text
 http://localhost:3001
 ```
+
+Use `RUST_BACKEND_PORT` to run the Rust backend on a different port, for example `RUST_BACKEND_PORT=3002 cargo run -- serve`.
 
 后端根路径 `/` 没有页面，浏览器直接打开 `http://localhost:3001` 会返回 404。请访问 API 路径或启动前端页面。
 
@@ -102,21 +105,21 @@ http://localhost:3000
 ### Backend
 
 ```bash
-cd backend
-npm run build
+cd rust-backend
+cargo build --release
 ```
 
 构建产物输出到：
 
 ```text
-backend/dist/
+rust-backend/target/release/
 ```
 
 生产方式启动：
 
 ```bash
-cd backend
-npm run start:prod
+cd rust-backend
+cargo run --release -- serve
 ```
 
 ### Frontend
@@ -153,7 +156,7 @@ GET /strategies
 POST /signals
 ```
 
-The NestJS backend also exposes proxy endpoints so the frontend can keep using the backend API surface:
+The Rust backend exposes proxy endpoints so app-facing clients can keep using the backend API surface:
 
 ```text
 GET /api/quant/health
@@ -238,16 +241,26 @@ mise run dev
 该脚本会并行运行：
 
 ```text
-backend:  npm run start:dev
+backend:  cargo run -- serve
 frontend: npm run dev
 quant:    uv run uvicorn app:app --reload --port 8000
 ```
+
+The legacy NestJS backend is retained in `backend/` for rollback:
+
+```bash
+npm run setup:legacy-backend
+npm run dev:backend:legacy
+npm run start:backend:legacy
+```
+
+To compare both backends side by side, keep Rust on the default `3001` and run the legacy NestJS backend on a different port only after adjusting its port configuration, or run Rust on `3002` with `RUST_BACKEND_PORT=3002`.
 
 ## Project Skills
 
 Agent-facing project workflows live in `.skills/`:
 
-- `.skills/add-new-index.md` explains how to verify a Tencent Finance code, register it in `backend/src/indices/fetcher.ts`, add it to the frontend category map, and verify the data flow.
+- `.skills/add-new-index.md` explains how to verify a Tencent Finance code, register it in the backend fetcher, add it to the frontend category map, and verify the data flow.
 - `.skills/deploy.md` documents production build, start, process-manager, and reverse-proxy steps for the backend and frontend.
 - `.skills/refresh-skills.sh` generates a prompt from recent git changes to update or create skill files when workflows change.
 

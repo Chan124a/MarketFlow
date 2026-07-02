@@ -1,6 +1,6 @@
 ---
 name: deploy-marketflow
-description: Use when building, validating, or deploying MarketFlow with mise, the NestJS backend, Next.js frontend, Python quant service, PM2, and Nginx.
+description: Use when building, validating, or deploying MarketFlow with mise, the Rust backend, Next.js frontend, Python quant service, PM2, and Nginx.
 ---
 
 # Deploy MarketFlow
@@ -9,7 +9,7 @@ Use this workflow for local toolchain development, production builds, server dep
 
 ## Local Toolchain Development
 
-Use `mise` to pin Node.js, Python, and uv versions without containers:
+Use `mise` to pin Node.js, Rust, Python, and uv versions without containers:
 
 ```bash
 mise install
@@ -20,7 +20,7 @@ mise run dev
 This starts:
 
 - Frontend: `http://localhost:3000`
-- Backend: `http://localhost:3001`
+- Backend: `http://localhost:3001` (Rust)
 - Quant service: `http://localhost:8000`
 
 Verify the local services:
@@ -32,17 +32,17 @@ curl http://localhost:8000/health
 
 ## Prerequisites
 
-- `mise` is installed locally, or Node.js 20, Python 3.12, and uv are installed manually.
+- `mise` is installed locally, or Node.js 20, Rust 1.94+, Python 3.12, and uv are installed manually.
 - PM2 is available globally: `npm install -g pm2`.
 - Backend port `3001`, frontend port `3000`, and quant port `8000` are available or mapped by the proxy.
 - Production environment variables are configured outside the repo.
 
 ## Build
 
-Run builds from each app directory:
+Run builds from each default app directory:
 
 ```bash
-cd backend && npm run build
+cd rust-backend && cargo build --release
 cd ../frontend && npm run build
 ```
 
@@ -51,14 +51,15 @@ cd ../frontend && npm run build
 From the repo root:
 
 ```bash
-pm2 start "npm run start:prod" --name marketflow-backend --cwd ./backend
+pm2 start "cargo run --release -- serve" --name marketflow-backend --cwd ./rust-backend
 pm2 start "npm run start" --name marketflow-frontend --cwd ./frontend
+pm2 start "uv run uvicorn app:app --port 8000" --name marketflow-quant --cwd ./quant
 pm2 save
 ```
 
 ## Reverse Proxy
 
-Configure Nginx to route frontend traffic to the Next.js app and API/WebSocket traffic to the NestJS backend. Preserve WebSocket upgrade headers for Socket.io.
+Configure Nginx to route frontend traffic to the Next.js app and API/WebSocket traffic to the Rust backend. Preserve WebSocket upgrade headers for Socket.io.
 
 ## Verification
 
@@ -73,3 +74,4 @@ Configure Nginx to route frontend traffic to the Next.js app and API/WebSocket t
 - Call out API, WebSocket, and data-source changes in deployment notes.
 - Do not commit local environment files or secrets.
 - In local development, `NEXT_PUBLIC_BACKEND_URL` defaults to `http://localhost:3001`.
+- The legacy NestJS backend remains in `backend/` for rollback. Use `npm run dev:backend:legacy` or `npm run start:backend:legacy` only when explicitly reverting.

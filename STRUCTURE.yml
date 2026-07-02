@@ -2,14 +2,24 @@ project:
   name: MarketFlow
   description: Real-time stock index dashboard
   structure:
+    - rust-backend/:
+        description: Default Rust API and Socket.io-compatible market data server
+        src/:
+          - main.rs: Rust backend CLI entry point
+          - server.rs: axum REST API, Socket.io push, 30s refresh loop, cache, and quant proxy
+          - fetcher.rs: Tencent Finance API parser and data models
+          - lib.rs: Rust library module exports
+        - Cargo.toml: Rust backend dependencies and package metadata
+        - Cargo.lock: Locked Rust dependency graph
+        - README.md: Rust backend operation notes
     - backend/:
-        description: NestJS API and WebSocket server
+        description: Legacy NestJS API and WebSocket server retained for rollback
         src/:
           - main.ts: Backend entry point (port 3001)
           - app.module.ts: Root application module
           - indices/:
               description: Market data logic & fetching
-              - fetcher.ts: Tencent Finance API parser
+              - fetcher.ts: Legacy Tencent Finance API parser
               - indices.service.ts: Data lifecycle & 30s refresh loop
               - indices.controller.ts: REST API endpoints
           - websocket/:
@@ -37,6 +47,6 @@ project:
         - deploy.md: Production deployment guide
         - TEMPLATE.md: Standard skill format
     - package.json: Root scripts for setup and concurrent development
-    - .mise.toml: Pinned Node/Python/uv versions and local development tasks
+    - .mise.toml: Pinned Node/Rust/Python/uv versions and local development tasks
     - AGENTS.md: Developer/Agent guidelines
     - README.md: Main project documentation

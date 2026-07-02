@@ -11,11 +11,11 @@ Use this skill to quickly grasp how MarketFlow's backend and frontend are struct
 
 ## Architecture Overview
 
-### 1. Backend (NestJS)
-The backend is a real-time market data aggregator.
-- **`IndicesModule`**: Fetches raw data from Tencent Finance and parses it.
-- **`QuantModule`**: Proxies app-facing quant API requests to the Python quant service while reusing cached index data.
-- **`WebsocketModule`**: Broadcasts updates via Socket.io.
+### 1. Backend (Rust, Default)
+The default backend is a Rust real-time market data aggregator under `rust-backend/`.
+- **`fetcher.rs`**: Fetches raw data from Tencent Finance and parses quote, detail, and financial data.
+- **`server.rs`**: Exposes the REST API with axum, proxies app-facing quant API requests to the Python quant service, runs the 30-second refresh loop, keeps in-memory caches, and broadcasts updates through Socket.io-compatible `socketioxide`.
+- **Legacy `backend/`**: The NestJS implementation is retained only for rollback and output comparison.
 
 ### 2. Frontend (Next.js)
 The frontend is a real-time dashboard using App Router.
@@ -32,11 +32,10 @@ The quant service is a FastAPI app under `quant/`.
 
 ## Data Lifecycle
 
-1. **Fetch**: `IndicesService` calls `fetcher.ts` every 30s.
-2. **Cache**: Fetched data is cached in memory within the service.
-3. **Notify**: `IndicesService` emits internal events via `EventsService`.
-4. **Broadcast**: `IndicesGateway` broadcasts `indices:update` to clients.
-5. **Quant**: `QuantService` sends cached index data to the Python service for `/api/quant/signals`.
+1. **Fetch**: `rust-backend/src/server.rs` calls the Rust fetcher every 30s.
+2. **Cache**: Fetched index and stock data is cached in memory.
+3. **Broadcast**: The Rust Socket.io layer broadcasts `indices:update` to clients after successful index refreshes.
+4. **Quant**: Rust `/api/quant/signals` sends cached index data to the Python service.
 
 ---
 
@@ -46,13 +45,13 @@ When modifying the architecture, verify that:
 1. REST endpoints (e.g., `/api/indices`) still return the cached state.
 2. WebSocket clients still receive the 30s broadcast.
 3. Chart coordinates are correctly mapped within the SVG viewboxes.
-4. Local `mise` development still starts frontend, backend, and quant services.
+4. Local `mise` development still starts frontend, the Rust backend, and quant services.
 5. Quant checks pass through both `http://localhost:8000/health` and `http://localhost:3001/api/quant/health`.
 
 ---
 
 ## Notes
 - **Source**: Tencent Finance APIs (`gtimg.cn`).
-- **Quant**: Quantitative logic belongs in Python under `quant/`; NestJS only proxies and integrates it.
+- **Quant**: Quantitative logic belongs in Python under `quant/`; the Rust backend proxies and integrates it by default.
 - **Convention**: Red = Increase, Green = Decrease (CN market standard).
-- **Files**: See `backend/src/indices/fetcher.ts` for API parsing logic.
+- **Files**: See `rust-backend/src/fetcher.rs` for default API parsing logic. The legacy NestJS parser remains at `backend/src/indices/fetcher.ts`.

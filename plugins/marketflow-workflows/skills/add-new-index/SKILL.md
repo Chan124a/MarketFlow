@@ -1,6 +1,6 @@
 ---
 name: add-new-index
-description: Use when adding a new market index or ticker code to MarketFlow, including backend Tencent Finance registration and frontend market categorization.
+description: Use when adding a new market index or ticker code to MarketFlow, including Rust backend Tencent Finance registration and frontend market categorization.
 ---
 
 # Add New Index
@@ -20,9 +20,12 @@ Follow this workflow whenever adding a market index or ticker to the dashboard.
 curl "http://qt.gtimg.cn/q=<code>"
 ```
 
-2. Register the code in `backend/src/indices/fetcher.ts`.
+2. Register the code in `rust-backend/src/fetcher.rs`.
 
 Add the code and display name to `INDEX_CODES`.
+
+If maintaining rollback parity with the legacy NestJS backend, mirror the code in
+`backend/src/indices/fetcher.ts`.
 
 3. Register the code in `frontend/app/page.tsx`.
 
@@ -30,11 +33,11 @@ Add the code to the correct `CATEGORIES` group for A-shares, Hong Kong, or US ma
 
 4. Keep names centralized.
 
-Use `INDEX_CODES` as the display-name source of truth. Avoid duplicating display names in frontend categories unless the existing code requires it.
+Use the Rust `INDEX_CODES` as the default display-name source of truth. Avoid duplicating display names in frontend categories unless the existing code requires it.
 
 ## Verification
 
-1. Start or restart the backend with `cd backend && npm run start:dev`.
+1. Start or restart the backend with `cd rust-backend && cargo run -- serve`.
 2. Check the API with `curl http://localhost:3001/api/indices`.
 3. Confirm the new code appears in the API response.
 4. Open the dashboard and confirm the card appears in the correct category.
